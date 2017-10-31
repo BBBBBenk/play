@@ -1,0 +1,20 @@
+* {
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+body {
+    overflow: hidden;
+}
+
+#stage {
+    border: 1px solid black;
+    background: url("..\\image\\bg.jpg");
+}
+
+.pos {
+    position: relative;
+    z-index: 99999999999999999999999999999999;
+    bottom: 0%;
+}
