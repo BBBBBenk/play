@@ -1,20 +1,33 @@
 var member = {
+    visibleH: "",
+    visibleW: "",
     foodlist: {},
     stage: "",
     stageW: 0,
     stageH: 0,
     ptx: "",
-    player: ""
+    player: "",
+    bpx: 0,
+    bpy: 0
 };
 
 window.onload = function() {
     member.stage = document.getElementById("stage");
     member.stageH = member.stage.height;
     member.stageW = member.stage.width;
+    member.visibleH = document.documentElement.clientHeight;
+    member.visibleW = document.documentElement.clientWidth;
+    member.stage.height = window.innerHeight;
+    member.stage.width = window.innerWidth;
+    member.bpx = parseInt(member.stage.style.backgroundPositionX);
+    member.bpy = parseInt(member.stage.style.backgroundPositionY);
     member.ptx = member.stage.getContext("2d");
     member.player = new hero();
-    window.requestAnimationFrame(animate);
-    var tt = new food();
+    member.foodlist[Math.random()] = new food();
+    setInterval(function() {
+        member.player.move();
+    }, 1000 / 60);
+
 }
 
 window.requestAnimationFrame = window.requestAnimationFrame ||
@@ -22,16 +35,9 @@ window.requestAnimationFrame = window.requestAnimationFrame ||
     window.webkitRequestAnimationFrame ||
     window.msRequestAnimationFrame;
 
-
-function animate(time) {
-    member.player.move();
-    window.requestAnimationFrame(animate);
-}
-
-
 function hero() {
-    this.x = 1;
-    this.y = 1;
+    this.x = Math.random() * 1000;
+    this.y = Math.random() * 1000;
     this.h = 70;
     this.w = 70;
     this.targetx = 0;
@@ -39,7 +45,7 @@ function hero() {
     this.speed = 5;
     this.raduis = 0;
     this.init();
-    this.reFlushTarget();
+    this.reflush();
 }
 
 hero.prototype.init = function() {
@@ -47,48 +53,47 @@ hero.prototype.init = function() {
     this.img = new Image();
     this.img.src = "image/smile.png";
     this.img.onload = function() {
-        member.ptx.drawImage(_this.img, _this.x, _this.y, _this.h, _this.w);
+        member.ptx.drawImage(_this.img, member.visibleW / 2 - _this.w, member.visibleH / 2 - _this.h, _this.h, _this.w);
     };
     member.stage.onmousemove = function(e) {
-        _this.reFlushTarget(e.offsetX, e.offsetY);
+        _this.reflush(e.offsetX, e.offsetY);
     }
     this.raduis = this.w / 2
 };
 
-hero.prototype.reclear = function() {
-    member.ptx.globalCompositeOperation = "destination-out";
-    member.ptx.arc(this.x + this.raduis, this.y + this.raduis, this.w / 2, 0, Math.PI * 2);
-    member.ptx.strokeStyle = 'rgba(250,250,250,0)';
-    member.ptx.fill();
-    member.ptx.globalCompositeOperation = "source-over";
-};
-
-hero.prototype.reFlushTarget = function(x, y) {
-    this.targetx = x - this.x;
-    this.targety = y - this.y;
-};
+hero.prototype.reflush = function(x, y) {
+    this.targetx = x - member.visibleW / 2 - this.w;
+    this.targety = y - member.visibleH / 2 - this.h;
+    //console.log(this.targetx + "," + this.targety);
+}
 
 hero.prototype.move = function() {
-    this.reclear();
     var deg = Math.atan2(this.targety, this.targetx);
     var distandx = this.speed * Math.cos(deg);
     var distandy = this.speed * Math.sin(deg);
-    member.ptx.drawImage(this.img, this.x += distandx, this.y += distandy, this.h, this.w);
+    member.bpx -= distandx;
+    member.bpy -= distandy;
+    this.x += distandx;
+    this.y += distandy;
+    member.stage.style.backgroundPosition = member.bpx + "px " + member.bpy + "px";
+    for (key in member.foodlist) {
+        var item = member.foodlist[key];
+        item.accpt(distandx, distandy);
+    }
 };
 
 function food() {
-    this.x = 500;
-    this.y = 500;
+    this.x = 1;
+    this.y = 1;
     this.w = 10;
+    this.color = this.colorHex();
     this.init();
 }
 
 food.prototype.init = function() {
-    member.ptx.globalCompositeOperation = "source-over";
-    member.ptx.fillStyle = this.colorHex();
+    member.ptx.fillStyle = this.color;
     member.ptx.arc(this.x, this.y, this.w / 2, 0, Math.PI * 2);
     member.ptx.fill();
-
 };
 
 food.prototype.colorHex = function() {
@@ -100,4 +105,18 @@ food.prototype.colorHex = function() {
 
     var hex = "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
     return hex;
+};
+
+food.prototype.accpt = function(x, y) {
+    this.clearR();
+    this.x -= x;
+    this.y -= y;
+    member.ptx.fillStyle = this.color;
+    member.ptx.arc(this.x, this.y, this.w / 2, 0, Math.PI * 2);
+    member.ptx.fill();
+};
+
+food.prototype.clearR = function() {
+    member.ptx.clearRect(this.x - 10, this.y - 10, this.w, this.w);
+
 };
